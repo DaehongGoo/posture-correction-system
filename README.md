@@ -1,2 +1,1 @@
-# posture-correction-system
-posture-correction-system (graduation project)
+# 업무자 실시간 자세 교정 시스템
