@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <title>자세 측정 결과</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+    <style>
+      body {
+        background-color: #111;
+        color: white;
+        font-family: sans-serif;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        overflow: hidden;
+      }
+
+      .container {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        width: 95%;
+        max-width: 1800px;
+        height: 90vh;
+        gap: 25px;
+      }
+
+      .chart-section {
+        flex: 1;
+        text-align: center;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        position: relative;
+        padding-top: 40px;
+      }
+      .chart-section h1 {
+        color: #4caf50;
+        margin-bottom: 15px;
+        font-size: 2rem;
+      }
+      .total-time {
+        color: #ccc;
+        font-size: 1.3rem;
+        margin-bottom: 25px;
+      }
+      .chart-container {
+        width: 90%;
+        height: 70%;
+        margin: 0 auto;
+      }
+      canvas {
+        width: 100% !important;
+        height: 100% !important;
+      }
+
+      .captures-section {
+        flex: 1.05;
+        text-align: center;
+        height: 100%;
+        transform: scale(0.92);
+        transform-origin: top right;
+        padding-top: 40px;
+      }
+      .captures-section h2 {
+        color: #4caf50;
+        margin-bottom: 25px;
+        font-size: 2rem;
+      }
+      .captures-container {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 18px;
+        align-content: start;
+        height: calc(100% - 60px);
+        margin-top: 120px;
+      }
+
+      .capture-card {
+        border-radius: 8px;
+        overflow: hidden;
+        background: #222;
+        width: 95%;
+        max-width: 330px;
+        display: flex;
+        flex-direction: column;
+        flex-basis: 30%;
+      }
+
+      .capture-card img {
+        width: 100%;
+        aspect-ratio: 4 / 3;
+        object-fit: cover;
+      }
+
+      .overlay {
+        background: rgba(0, 0, 0, 0.65);
+        padding: 10px 8px;
+        color: white;
+        font-size: 1rem;
+        text-align: center;
+        z-index: 2;
+        line-height: 1.3;
+      }
+
+      .status-normal {
+        color: #4caf50;
+        font-weight: bold;
+      }
+      .status-warning {
+        color: #ff9800;
+        font-weight: bold;
+      }
+      .status-danger {
+        color: #f44336;
+        font-weight: bold;
+      }
+
+      .time-info {
+        font-size: 0.9rem;
+        color: #ccc;
+        display: block;
+        margin-top: 4px;
+      }
+
+      .home-button {
+        position: fixed;
+        bottom: 40px;
+        left: 50%;
+        transform: translateX(-50%);
+        padding: 22px 60px;
+        font-size: 28px;
+        cursor: pointer;
+        background-color: #4caf50;
+        color: white;
+        border: none;
+        border-radius: 10px;
+        text-decoration: none;
+        box-shadow: 0 0 20px rgba(0, 0, 0, 0.6);
+        transition: background-color 0.2s ease-in-out,
+          transform 0.1s ease-in-out;
+        z-index: 5;
+      }
+
+      .home-button:hover {
+        background-color: #45a049;
+        transform: translateX(-50%) scale(1.05);
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container">
+      <div class="chart-section">
+        <h1>📈 자세 측정 결과 요약</h1>
+        <div class="total-time" id="total-time">총 측정 시간: 계산 중...</div>
+        <div class="chart-container">
+          <canvas id="timeChart"></canvas>
+        </div>
+      </div>
+
+      <div class="captures-section">
+        <h2>가장 자세가 좋지 않았던 순간</h2>
+        <div class="captures-container">
+          <div class="capture-card">
+            <img id="pitch-img" src="" alt="고개 숙임" />
+            <div class="overlay">
+              고개 숙임 <span id="pitch-status"></span>
+              <span id="pitch-time" class="time-info"></span>
+            </div>
+          </div>
+          <div class="capture-card">
+            <img id="shoulder-img" src="" alt="어깨 높이차" />
+            <div class="overlay">
+              어깨 높이차 <span id="shoulder-status"></span>
+              <span id="shoulder-time" class="time-info"></span>
+            </div>
+          </div>
+          <div class="capture-card">
+            <img id="roll-img" src="" alt="고개 좌우 기울기" />
+            <div class="overlay">
+              고개 좌우 기울기 <span id="roll-status"></span>
+              <span id="roll-time" class="time-info"></span>
+            </div>
+          </div>
+          <div class="capture-card">
+            <img id="fwd-img" src="" alt="어깨 말림" />
+            <div class="overlay">
+              어깨 말림 <span id="fwd-status"></span>
+              <span id="fwd-time" class="time-info"></span>
+            </div>
+          </div>
+          <div class="capture-card">
+            <img id="trunk-img" src="" alt="상체 좌우 기울기" />
+            <div class="overlay">
+              상체 좌우 기울기 <span id="trunk-status"></span>
+              <span id="trunk-time" class="time-info"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <a href="/" class="home-button">다시 측정하기</a>
+    </div>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", async () => {
+        const res = await fetch("/results_data");
+        const data = await res.json();
+
+        const total = (
+          data.safe_time +
+          data.warning_time +
+          data.danger_time
+        ).toFixed(1);
+        document.getElementById(
+          "total-time"
+        ).textContent = `총 측정 시간: ${total}초`;
+
+        // ---- 파이차트 ----
+        const ctx = document.getElementById("timeChart").getContext("2d");
+        new Chart(ctx, {
+          type: "pie",
+          data: {
+            labels: ["올바른 자세", "경고 자세", "위험 자세"],
+            datasets: [
+              {
+                label: "시간 (초)",
+                data: [data.safe_time, data.warning_time, data.danger_time],
+                backgroundColor: [
+                  "rgba(75, 192, 192, 0.7)",
+                  "rgba(255, 159, 64, 0.7)",
+                  "rgba(255, 99, 132, 0.7)",
+                ],
+                borderColor: [
+                  "rgba(75, 192, 192, 1)",
+                  "rgba(255, 159, 64, 1)",
+                  "rgba(255, 99, 132, 1)",
+                ],
+                borderWidth: 1,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                position: "top",
+                labels: { color: "white", font: { size: 18 } },
+              },
+              datalabels: {
+                color: "#fff",
+                font: { weight: "bold", size: 18 },
+                formatter: (value, ctx) => {
+                  if (value < 0.1) return null;
+                  const label = ctx.chart.data.labels[ctx.dataIndex];
+                  return `${label}\n${value.toFixed(1)}초`;
+                },
+              },
+            },
+          },
+          plugins: [ChartDataLabels],
+        });
+
+        // ---- 상태 및 시간 표시 ----
+        const setStatus = (el, status) => {
+          el.textContent = `(${status})`;
+          el.classList.remove(
+            "status-normal",
+            "status-warning",
+            "status-danger"
+          );
+          if (status === "정상") el.classList.add("status-normal");
+          else if (status === "경고") el.classList.add("status-warning");
+          else if (status === "위험") el.classList.add("status-danger");
+        };
+
+        const setTime = (el, time, total_time) => {
+          el.textContent = `(${time.toFixed(1)}초 / ${total_time}초)`;
+        };
+
+        setStatus(document.getElementById("pitch-status"), data.pitch_status);
+        setTime(document.getElementById("pitch-time"), data.pitch_time, total);
+
+        setStatus(
+          document.getElementById("shoulder-status"),
+          data.shoulder_status
+        );
+        setTime(
+          document.getElementById("shoulder-time"),
+          data.shoulder_time,
+          total
+        );
+
+        // ✅ 수정된 부분 (오타 수정)
+        setStatus(document.getElementById("roll-status"), data.roll_status);
+        setTime(document.getElementById("roll-time"), data.roll_time, total);
+
+        setStatus(document.getElementById("fwd-status"), data.fwd_status);
+        setTime(document.getElementById("fwd-time"), data.fwd_time, total);
+
+        setStatus(document.getElementById("trunk-status"), data.trunk_status);
+        setTime(document.getElementById("trunk-time"), data.trunk_time, total);
+
+        // ---- 이미지 로드 ----
+        const t = new Date().getTime();
+        document.getElementById(
+          "pitch-img"
+        ).src = `/static/captures/pitch.jpg?t=${t}`;
+        document.getElementById(
+          "shoulder-img"
+        ).src = `/static/captures/shoulder.jpg?t=${t}`;
+        document.getElementById(
+          "roll-img"
+        ).src = `/static/captures/roll.jpg?t=${t}`;
+        document.getElementById(
+          "fwd-img"
+        ).src = `/static/captures/fwd.jpg?t=${t}`;
+        document.getElementById(
+          "trunk-img"
+        ).src = `/static/captures/trunk.jpg?t=${t}`;
+      });
+    </script>
+  </body>
+</html>

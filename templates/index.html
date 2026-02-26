@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>자세 측정 시스템</title>
+    <meta charset="utf-8" />
+    <style>
+      /* --- 수정: body에 Flexbox 중앙 정렬 적용 --- */
+      body {
+        background-color: #111;
+        color: white;
+        font-family: sans-serif;
+        text-align: center;
+        margin: 0;
+
+        /* Flexbox로 수직/수평 중앙 정렬 */
+        display: flex;
+        flex-direction: column;
+        align-items: center;     /* 수평 중앙 정렬 */
+        justify-content: center; /* 수직 중앙 정렬 */
+        min-height: 100vh;       /* 최소 화면 높이 */
+        box-sizing: border-box;  
+        
+        /* 하단 정보 패널과 겹치지 않도록 여유 공간 확보 */
+        padding-bottom: 100px; 
+      }
+      /* --- 수정 끝 --- */
+
+      #title {
+        font-size: 2.6rem;
+        color: #a5f3ad;
+        font-weight: 700;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8),
+          0 0 10px rgba(165, 243, 173, 0.2);
+        letter-spacing: 1px;
+        margin-bottom: 10px;
+        margin-top: 20px;
+        display: flex;
+        justify-content: center;
+        align-items: baseline;
+        flex-wrap: wrap;
+      }
+
+      #title-main {
+        margin-right: 12px;
+      }
+
+      #title-status {
+        font-size: 1.5rem;
+        color: #ddd;
+        font-weight: 400;
+      }
+
+      .blinking-text {
+        animation: blink 1.5s infinite;
+      }
+      @keyframes blink {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.3; }
+      }
+
+
+      .btns { margin: 10px; }
+      button {
+        margin: 5px; padding: 10px 20px; font-size: 16px; cursor: pointer; transition: opacity 0.3s;
+      }
+      button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+      #pauseButton, #endButton {
+        display: none;
+      }
+
+      #left-info, #right-info {
+        position: fixed; background: rgba(0, 0, 0, 0.6); padding: 10px; border-radius: 8px; font-size: 28px;
+      }
+      #left-info { left: 20px; bottom: 20px; text-align: left; }
+      #right-info { right: 20px; bottom: 20px; text-align: right; }
+
+      /* 모달 */
+      .modal-backdrop {
+        display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 150;
+      }
+      .modal {
+        display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+        background: #1b1b1b; color: #eaeaea; padding: 24px; border-radius: 12px; 
+        width: 90%; max-width: 720px;
+        z-index: 160;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+        text-align: center;
+      }
+      .modal h3 { 
+        margin-top: 0; 
+        color: #a5f3ad; 
+        font-size: 1.6rem;
+      }
+      .modal ol { 
+        text-align: left; 
+        line-height: 1.6; 
+        font-size: 1.1rem;
+      }
+      .modal .confirm {
+        margin-top: 18px; padding: 10px 18px; font-size: 16px; cursor: pointer;
+        background: #4caf50; color: white; border: none; border-radius: 8px;
+      }
+      .tip { 
+        font-size: 1rem;
+        color: #bbb; 
+        margin-top: 8px; 
+        text-align: left; 
+      }
+
+      /* 카메라 프레임 */
+      .video-wrap {
+        display: inline-block;
+        position: relative;
+        margin-top: 10px;
+        border: 2px solid white;
+        line-height: 0;
+        z-index: 5;
+      }
+      .video-wrap img {
+        display: block;
+        width: 640px; height: 480px;
+      }
+
+      /* 인-프레임 토스트 */
+      .inframe-toast {
+        position: absolute;
+        left: 50%;
+        bottom: 14px;
+        transform: translateX(-50%) translateY(10px);
+        background: rgba(0,0,0,0.75);
+        color: #fff;
+        padding: 10px 16px;
+        border-radius: 12px;
+        font-size: 16px;
+        line-height: 1.2;
+        white-space: nowrap;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity .25s ease, transform .25s ease;
+        z-index: 20;
+        box-shadow: 0 6px 18px rgba(0,0,0,.35);
+      }
+      .inframe-toast.show {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+      }
+      .inframe-toast.big {
+        padding: 14px 22px;
+        font-size: 18px;
+        border-radius: 14px;
+        background: linear-gradient(135deg, rgba(56,142,60,0.95), rgba(76,175,80,0.95));
+        box-shadow:
+          0 10px 22px rgba(0,0,0,.45),
+          0 0 24px rgba(76,175,80,.35);
+      }
+      .inframe-toast.big::before {
+        content: "▶ ";
+        font-weight: 700;
+        margin-right: 2px;
+        opacity: .95;
+      }
+    </style>
+  </head>
+  <body>
+    <h2 id="title">
+      <span id="title-main">자세 측정 시스템</span>
+      <span id="title-status"></span>
+    </h2>
+
+    <div class="video-wrap" id="videoWrap">
+      <img src="{{ url_for('video') }}" width="640" height="480" alt="camera" />
+      <div id="inframe-toast" class="inframe-toast" aria-live="polite"></div>
+    </div>
+
+    <div class="btns">
+      <button id="startButton" onclick="openGuide()">시작</button>
+      <button id="pauseButton" onclick="pauseMeasurement()">중단</button>
+      <button id="endButton" onclick="endMeasurement()">종료</button>
+    </div>
+
+    <div id="left-info"></div>
+    <div id="right-info"></div>
+
+    <div class="modal-backdrop" id="modalBackdrop"></div>
+    <div class="modal" id="startModal">
+      <h3>시작 전, 아래 안내를 확인해주세요</h3>
+      <div class="tip">* 깔끔한 배경에서 측정 정확도가 높아집니다.</div>
+      <ol>
+        <li>노트북과 사용자를 일직선 상에 위치시켜 주세요.</li>
+        <li>어깨선이 전부 나오도록 화면을 맞춰주세요.</li>
+        <li>초기자세 설정을 위해 화면 좌측 하단의 수치가 모두 <b>정상</b>이 되도록 바른 자세를 취해주세요.</li>
+        <li>초기자세 설정이 완료되면 측정이 자동으로 시작됩니다.</li>
+      </ol>
+      <button class="confirm" onclick="confirmStart()">확인</button>
+    </div>
+
+    <script>
+      const startButton = document.getElementById("startButton");
+      const pauseButton = document.getElementById("pauseButton");
+      const endButton   = document.getElementById("endButton");
+
+      const modal    = document.getElementById("startModal");
+      const backdrop = document.getElementById("modalBackdrop");
+
+      const inframeToast = document.getElementById("inframe-toast");
+      const videoWrap    = document.getElementById("videoWrap");
+      
+      const titleMain   = document.getElementById("title-main");
+      const titleStatus = document.getElementById("title-status");
+
+      let prevPhase = null;
+
+      function showInFrameToast(msg, opts = {}) {
+        const { big = false, duration = 2000 } = opts;
+        inframeToast.classList.toggle("big", !!big);
+        inframeToast.textContent = msg;
+        inframeToast.classList.add("show");
+
+        clearTimeout(showInFrameToast._t);
+        showInFrameToast._t = setTimeout(() => {
+          inframeToast.classList.remove("show");
+        }, duration);
+      }
+
+      function openGuide() {
+        fetch("/stats").then(r => r.json()).then(s => {
+          if (s.phase === "paused") {
+            startMeasurement();
+          } else {
+            backdrop.style.display = "block";
+            modal.style.display = "block";
+          }
+        });
+      }
+
+      function confirmStart() {
+        modal.style.display = "none";
+        backdrop.style.display = "none";
+        showInFrameToast("초기자세를 설정합니다", { big: false, duration: 2000 });
+        fetch("/start");
+      }
+
+      function startMeasurement() {
+        fetch("/start");
+      }
+
+      function pauseMeasurement() {
+        fetch("/stop");
+      }
+
+      function endMeasurement() {
+        fetch("/end").then(() => {
+          window.location.href = "/results";
+        });
+      }
+
+      function updateStats() {
+        fetch("/stats")
+          .then((res) => res.json())
+          .then((data) => {
+            
+            document.getElementById("left-info").innerHTML = `
+              <div style="color:${data["고개숙임"].color}">고개숙임: ${data["고개숙임"].value} [${data["고개숙임"].status}]</div>
+              <div style="color:${data["고개좌우기울기"].color}">고개좌우기울기: ${data["고개좌우기울기"].value} [${data["고개좌우기울기"].status}]</div>
+              <div style="color:${data["상체좌우기울기"].color}">상체좌우기울기: ${data["상체좌우기울기"].value} [${data["상체좌우기울기"].status}]</div>
+              <div style="color:${data["어깨말림"].color}">어깨말림: ${data["어깨말림"].value} [${data["어깨말림"].status}]</div>
+              <div style="color:${data["어깨높이차"].color}">어깨높이차: ${data["어깨높이차"].value} [${data["어깨높이차"].status}]</div>
+            `;
+            document.getElementById("right-info").innerHTML = `
+              <div>전체측정시간: ${data["전체측정시간"]}</div>
+              <div style="color:green">올바른자세시간: ${data["올바른자세시간"]}</div>
+              <div style="color:orange">경고자세시간: ${data["경고자세시간"]}</div>
+              <div style="color:red">위험자세시간: ${data["위험자세시간"]}</div>
+            `;
+
+            // 상단 타이틀 및 버튼 상태 관리
+            titleMain.innerText = "자세 측정 시스템";
+
+            if (data.phase === "awaiting") {
+              titleStatus.innerText = "(초기자세 설정정 중: 모든 수치가 '정상'이면 자동 시작)";
+              titleStatus.classList.remove("blinking-text");
+              
+              startButton.disabled = true;
+              pauseButton.style.display = 'inline-block';
+              endButton.style.display = 'inline-block';
+              pauseButton.disabled = false;
+              endButton.disabled = false;
+
+            } else if (data.phase === "running") {
+              titleStatus.innerText = "(측정 중)";
+              titleStatus.classList.add("blinking-text");
+              
+              startButton.disabled = true;
+              pauseButton.style.display = 'inline-block';
+              endButton.style.display = 'inline-block';
+              pauseButton.disabled = false;
+              endButton.disabled = false;
+
+            } else if (data.phase === "paused") {
+              titleStatus.innerText = "(중단됨)";
+              titleStatus.classList.remove("blinking-text");
+              
+              startButton.innerText = "재시작";
+              startButton.disabled = false;
+              pauseButton.style.display = 'none';
+              endButton.style.display = 'inline-block';
+              endButton.disabled = false;
+
+            } else { // "stopped"
+              titleStatus.innerText = "";
+              titleStatus.classList.remove("blinking-text");
+              
+              startButton.innerText = "시작";
+              startButton.disabled = false;
+              pauseButton.style.display = 'none';
+              endButton.style.display = 'none';
+            }
+
+            // 상태 전환 감지
+            if (prevPhase === "awaiting" && data.phase === "running") {
+              showInFrameToast("측정을 시작합니다", { big: true, duration: 3000 });
+            }
+            prevPhase = data.phase;
+          });
+      }
+      
+      setInterval(updateStats, 500);
+    </script>
+  </body>
+</html>
