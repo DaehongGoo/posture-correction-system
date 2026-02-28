@@ -38,9 +38,6 @@
 - 5개 지표 각각에 대해 측정 중 **가장 나빴던 순간**을 자동으로 기록합니다.
 - **스크린샷 + 발생 시각 + 당시 상태**를 카드 형태로 제공하여, 사용자가 취약한 자세 패턴을 명확히 확인할 수 있습니다.
 
-## 기술 스택 및 아키텍처
-<img width="1123" height="595" alt="1  시스템 아키텍처" src="https://github.com/user-attachments/assets/d0bbb2d3-1445-4b96-a670-4481a3043fe9" />
-
 ## 실행 방법
 
 1. 시스템은 사용자의 랜드마크를 활용하여 '고개 숙임', '고개 좌우 기울기', '어깨 높이 차', '어깨 말림', '상체 좌우 기울기'의 5가지 핵심 자세 지표를 실시간으로 측정한다.
@@ -56,6 +53,9 @@
 <img width="567" height="276" alt="image" src="https://github.com/user-attachments/assets/a118d80a-fd8b-4717-a1d2-38c2ab50943d" />
 <img width="567" height="278" alt="image" src="https://github.com/user-attachments/assets/35c96f30-ffca-451d-a7f5-a98126fdfc13" />
 <img width="567" height="275" alt="image" src="https://github.com/user-attachments/assets/545aeec8-a6bd-44cc-b3aa-273e543d5f97" />
+
+## 기술 스택 및 아키텍처
+<img width="1123" height="595" alt="1  시스템 아키텍처" src="https://github.com/user-attachments/assets/d0bbb2d3-1445-4b96-a670-4481a3043fe9" />
 
 ## 역할
 자세 평가 기준을 만들기 위한 의학적 근거 및 각도 거리 지표 리서치와 Baseline 기반 초기 자세 설정 UX 설계, 그리고 캡처 기반 직관 피드백 기능 아이디어를 주도적으로 제안하고 요구사항으로 구체화해 프로젝트의 제품 설계 방향을 만든 역할을 담당하였다.
